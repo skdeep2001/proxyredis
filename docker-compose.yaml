@@ -1,0 +1,20 @@
+version: "3.9"
+services:
+  web:
+    build:
+      context: .
+      target: development
+    env_file: env
+    ports:
+      - "${PROXY_PORT}:${PROXY_PORT}"
+  tester:
+    build:
+      context: .
+      target: systemtest
+    env_file: env
+  redis:
+    image: "redis"
+    hostname: "${REDIS_HOST}"
+    command: --port ${REDIS_PORT}
+    ports: 
+      - ${REDIS_PORT}:${REDIS_PORT}
