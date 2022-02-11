@@ -54,7 +54,8 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
   - The value if it exists will be decoded to a utf-8 string.
 - The stub API throttle is defined in **\<root>/src/proxycache/rate_limiter.py**
 - A single connection to the db (**\<root>/src/proxycache/db.py**) is kept open for the life of the process.
-- Unit and system tests can be found in **\<root>/tests/unit** and **\<root>/tests/system**. 
+- Unit and system tests can be found in **\<root>/tests/unit** and **\<root>/tests/system**.
+- The **\<root>/Dockerfile** uses a multi stage pattern to build the application container, run the unit tests (during build) and run system tests after containers are running. The **\<root>/docker-compose.yaml** introduces an additional service to ensure the dependencies (Redis and Proxy) are up and running before triggering the end to end tests. See also the associated **<root>/Makefile** and the **test** rule.
 
 ## Build and Test
 - Requirements for build and run
