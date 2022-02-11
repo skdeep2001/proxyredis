@@ -69,8 +69,7 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
   This will run the unit tests, build the appropriate images, start the containers that host the services and then run the system test. 
 
 ## Unimplemented
-
-- Concurrent LRU Cache: Bonus feature was not implemented due to lack of time.
+- Concurrent LRU Cache: Bonus feature was not implemented due to lack of time. Relatively simple to refactor with a coarse grained lock in the LRUCache.
 - Redis protocol:  Bonus feature was not implemented due to lack of time.
 
 ## Known Issues / Areas for Improvement
