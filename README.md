@@ -132,17 +132,140 @@ L2 cache:                        1 MiB
 L3 cache:                        24 MiB
 
 ```
-End-to-end benchmark with wrk where the key does not exist in the db or cache:
+End-to-end benchmark with **wrk** where the key does not exist in the db or cache, so effectively each query will result in hitting the Redis db. Since there is only 1 spare core for the client load generator, we use 1 thread only but ramp up the number of open connections. 
+  - For one connection the latency is lowest, and as the number of outstanding connections are increased the latency increases. This is expected since the request processor is single threaded and the bottleneck. 
+ - The request throughput seems to peak at around 32 connections and shows that the HTTPD frontend is able to handle concurrent connections.
 ```
-$ wrk -t2 -c2 -d10 http://localhost:8000/lookup?key=0
-Running 10s test @ http://localhost:8000/lookup?key=0
-  2 threads and 2 connections
+$ for i in 1 2 4 8 16 32 64 128; do cmd="../wrk/wrk -t1 -c$i -d30 --latency http://localhost:8000/lookup?key=0"; echo; echo $cmd; $cmd; echo ====================================================; done
+
+../wrk/wrk -t1 -c1 -d30 --latency http://localhost:8000/lookup?key=0
+Running 30s test @ http://localhost:8000/lookup?key=0
+  1 threads and 1 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency     1.14ms  327.20us  10.71ms   94.64%
-    Req/Sec     0.89k    74.67     0.98k    90.00%
-  17704 requests in 10.01s, 3.36MB read
-Requests/sec:   1768.44
-Transfer/sec:    343.67KB
+    Latency   805.10us  452.13us  13.56ms   98.53%
+    Req/Sec     1.28k   138.94     1.63k    67.67%
+  Latency Distribution
+     50%  764.00us
+     75%  833.00us
+     90%    0.92ms
+     99%    1.55ms
+  38340 requests in 30.00s, 7.28MB read
+Requests/sec:   1277.92
+Transfer/sec:    248.35KB
+====================================================
+
+../wrk/wrk -t1 -c2 -d30 --latency http://localhost:8000/lookup?key=0
+Running 30s test @ http://localhost:8000/lookup?key=0
+  1 threads and 2 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.16ms  585.77us  16.60ms   98.56%
+    Req/Sec     1.77k   133.82     1.98k    78.67%
+  Latency Distribution
+     50%    1.11ms
+     75%    1.18ms
+     90%    1.29ms
+     99%    2.12ms
+  52866 requests in 30.00s, 10.03MB read
+Requests/sec:   1762.10
+Transfer/sec:    342.44KB
+====================================================
+
+../wrk/wrk -t1 -c4 -d30 --latency http://localhost:8000/lookup?key=0
+Running 30s test @ http://localhost:8000/lookup?key=0
+  1 threads and 4 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.16ms    1.10ms  42.54ms   97.42%
+    Req/Sec     1.91k   222.50     2.15k    85.33%
+  Latency Distribution
+     50%    2.01ms
+     75%    2.14ms
+     90%    2.45ms
+     99%    4.90ms
+  57085 requests in 30.02s, 10.83MB read
+Requests/sec:   1901.57
+Transfer/sec:    369.54KB
+====================================================
+
+../wrk/wrk -t1 -c8 -d30 --latency http://localhost:8000/lookup?key=0
+Running 30s test @ http://localhost:8000/lookup?key=0
+  1 threads and 8 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.05ms  849.94us  19.16ms   86.29%
+    Req/Sec     1.99k   229.89     2.29k    77.33%
+  Latency Distribution
+     50%    3.86ms
+     75%    4.21ms
+     90%    5.08ms
+     99%    6.69ms
+  59396 requests in 30.03s, 11.27MB read
+Requests/sec:   1978.06
+Transfer/sec:    384.41KB
+====================================================
+
+../wrk/wrk -t1 -c16 -d30 --latency http://localhost:8000/lookup?key=0
+Running 30s test @ http://localhost:8000/lookup?key=0
+  1 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     7.76ms    1.49ms  32.15ms   90.79%
+    Req/Sec     2.08k   199.74     2.36k    82.67%
+  Latency Distribution
+     50%    7.53ms
+     75%    7.89ms
+     90%    8.73ms
+     99%   13.51ms
+  62072 requests in 30.02s, 11.78MB read
+Requests/sec:   2067.42
+Transfer/sec:    401.77KB
+====================================================
+
+../wrk/wrk -t1 -c32 -d30 --latency http://localhost:8000/lookup?key=0
+Running 30s test @ http://localhost:8000/lookup?key=0
+  1 threads and 32 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    14.84ms    2.08ms  43.96ms   90.27%
+    Req/Sec     2.17k   164.78     2.40k    82.00%
+  Latency Distribution
+     50%   14.48ms
+     75%   15.24ms
+     90%   16.16ms
+     99%   24.58ms
+  64795 requests in 30.05s, 12.30MB read
+Requests/sec:   2155.94
+Transfer/sec:    418.98KB
+====================================================
+  
+../wrk/wrk -t1 -c64 -d30 --latency http://localhost:8000/lookup?key=0
+Running 30s test @ http://localhost:8000/lookup?key=0
+  1 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    33.10ms    8.02ms 189.65ms   93.33%
+    Req/Sec     1.96k   240.32     2.33k    85.95%
+  Latency Distribution
+     50%   31.46ms
+     75%   32.51ms
+     90%   36.01ms
+     99%   62.92ms
+  58493 requests in 30.04s, 11.10MB read
+Requests/sec:   1947.33
+Transfer/sec:    378.44KB
+====================================================
+
+../wrk/wrk -t1 -c128 -d30 --latency http://localhost:8000/lookup?key=0
+Running 30s test @ http://localhost:8000/lookup?key=0
+  1 threads and 128 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    62.34ms    4.97ms  97.00ms   87.62%
+    Req/Sec     2.06k   174.82     2.55k    75.00%
+  Latency Distribution
+     50%   61.15ms
+     75%   62.65ms
+     90%   66.68ms
+     99%   80.81ms
+  61611 requests in 30.06s, 11.69MB read
+Requests/sec:   2049.54
+Transfer/sec:    398.30KB
+====================================================
+
 ```
 The same test with just the HTTP frontend and a dummy cache shows ~3.5-4K requests/sec.
 Need to do more performance bottleneck analysis.
