@@ -5,7 +5,7 @@ The caching proxy for redis has the following high level architecture:
 ```
 LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
 ```
-- LB: Load Balancer that can spray the incoming requests in a round-robin fashion across multiple TCP ports. In the current implementation the load balancer is actually omitted as explained by the next item but is included for scaling up, if a single http server becomes the bottleneck.
+- LB: HTTP Load Balancer that can spray the incoming requests in a round-robin fashion across multiple TCP ports. In the current implementation the load balancer is actually omitted as explained by the next item but is included for scaling up, if a single http server becomes the bottleneck. If/when the Redis protocol on the frontend is implemented, we can support one set of ports to be load balanced that support HTTP and another that support the Redis protocol.
 - HTTPD: HTTP server that runs an async event loop in its dedicated thread. The server accepts incoming connections on a single TCP port. It configures the API routes and handles the GET request to query the key from the cache.
   - For scaling, multiple of these servers can be spun up, each bound to a distinct TCP port and running its own async event loop on a dedicated thread/core. When this is done, the load balancer can be added.
   - In the current implementation, only a single port and HTTP server is configured and spun up. Changes to support multiple servers require a minor tweak to the configuration parameter format in the **env** file and a minor change to the main program to create multiple threads and Http server objects.
@@ -26,7 +26,7 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
   - redis-py
   - aiohttp (async http library)
   - pytest (for unit and system tests)
-- The configuration settings for the services are passed through environment variables defined in the **<root>/env** file:
+- The configuration settings for the services are passed through environment variables defined in the **\<root>/env** file:
   ```
   PROXY_HOST=""
   PROXY_PORT=8000
@@ -36,10 +36,10 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
   REDIS_HOST=redis
   REDIS_PORT=6379
   ```
-- **<root>/src/proxycache/** has all modules that implement the caching proxy.
-  - **<root>/src/proxycache/main.py** implements the entry point for the service startup and configuration and constructs the processing pipeline shown in the architecture section.
+- **\<root>/src/proxycache/** has all modules that implement the caching proxy.
+  - **\<root>/src/proxycache/main.py** implements the entry point for the service startup and configuration and constructs the processing pipeline shown in the architecture section.
 
-- The HTTP service (**<root>/src/proxycache/http_server.py**) supports the following GET query:
+- The HTTP service (**\<root>/src/proxycache/http_server.py**) supports the following GET query:
   ```
   /lookup?key=<key>
   ```
@@ -52,9 +52,9 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
   - A result of getting throttled with have status 503
   - If a key does not exist in the Redis store (or cache), the status will be 404.
   - The value if it exists will be decoded to a utf-8 string.
-- The stub API throttle is defined in **<root>/src/proxycache/rate_limiter.py**
-- A single connection to the db (**<root>/src/proxycache/db.py**) is kept open for the life of the process.
-- Unit and system tests can be found in **<root>/tests/unit** and **<root>/tests/system**. 
+- The stub API throttle is defined in **\<root>/src/proxycache/rate_limiter.py**
+- A single connection to the db (**\<root>/src/proxycache/db.py**) is kept open for the life of the process.
+- Unit and system tests can be found in **\<root>/tests/unit** and **\<root>/tests/system**. 
 
 ## Build and Test
 - Requirements for build and run
@@ -70,7 +70,7 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
 
 ## Unimplemented
 - Concurrent LRU Cache: Bonus feature was not implemented due to lack of time. Relatively simple to refactor with a coarse grained lock in the LRUCache.
-- Redis protocol:  Bonus feature was not implemented due to lack of time.
+- Redis protocol:  Bonus feature was not implemented due to lack of time. This should have better performance since it doesn't have the overhead of HTTP. The plan would be to have add an AsyncRedisr that is assigned to its own thread(s). The design can support both HTTP and Redis together, with the event loops of each being on separate threads.
 
 ## Known Issues / Areas for Improvement
 - Fix issue with graceful shutdown of the HTTP server causing container take longer to shutdown.
@@ -102,7 +102,10 @@ Around 35 hrs were spent on this project.
 ## Notes
 The HTTP server with a stub cache was tested with [**wrk**](https://github.com/wg/wrk) during development to understand the performance of the HTTP frontend with sync vs async frameworks provided by Python. The wrk integration is not included in the repo at this time.
 
+Minimum core count for this setup: HTTPD x n + ReqProcessor x m + Redis x 1. In the current design n=1 and can be increased, m=1 (needs concurrent LRUCache for m > 1) => min core count = 3 since Redis is running on the same server. A few cores should also be required to test the client load generator.
+
 The builds were done in a Ubuntu VM on VirtualBox using a relatively older laptop and 4 cores. However any performance impact is likely limited by the python interpreter overhead, so fine tuning may have limited value.
+
 ```
 $ lscpu
 Architecture:                    x86_64
