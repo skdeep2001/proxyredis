@@ -6,6 +6,7 @@ class KVStore:
         self.port = port
         self.hits = 0
         self.misses = 0
+        self.errors = 0
 
     def get(self, key):
         raise NotImplementedError
@@ -16,7 +17,13 @@ class RedisKVStore(KVStore):
         self.db = redis.Redis(host=host, port=port, db=0)
 
     def get(self, key):
-        result = self.db.get(key)
+        try:
+            result = self.db.get(key)
+        except Exception as e:
+            print(e)
+            result = None
+            self.errors += 1
+
         if result is None:
             self.misses += 1
         else:

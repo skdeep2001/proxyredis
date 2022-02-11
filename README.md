@@ -26,6 +26,7 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
   - redis-py
   - aiohttp (async http library)
   - pytest (for unit and system tests)
+- **main.py** implements the entry point for the service startup and configuration and construct the processing pipeline shown in the architecture section.
 - The HTTP service supports the following GET query:
   ```
   /lookup?key=<key>
@@ -39,6 +40,7 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
   - A result of getting throttled with have status 503
   - If a key does not exist in the Redis store (or cache), the status will be 404.
   - The value if it exists will be decoded to a utf-8 string.
+- A single connection to the db is kept open for the life of the process.
 
 ## Build and Test
 - Requirements for build and run
@@ -60,11 +62,15 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
 ## Known Issues / Areas for Improvement
 - Fix issue with graceful shutdown of the HTTP server causing container take longer to shutdown.
 - Add pre-commit git hooks for PEP8 linter
-- More comprehensive unit and system tests. 
+- More comprehensive unit and system tests. For example:
   - Test with different key and value sizes.
   - Test LRU expiry
+  - Test all error responses
+  - High load test
 - Improve the code documentation including this README.
 - Add logging.
+- Add error injection mechanisms.
+- Add some more decoupling through factory constructors so cache implementations can be configured at service startup. This will help with testing.
 - Change redis connection to connection pool for developing the concurrent LRUCache.
 - Harden against exceptions such as the redis service failure and error out gracefully.
 - Dump http server/lrucache/db metrics to a stats database (that can be aggregated across multiple cache partitions/shards) and displayed in something like a Grafana dashboard.
