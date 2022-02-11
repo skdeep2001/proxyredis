@@ -1,7 +1,7 @@
 
 DOCKER_ENV=--env-file env
 
-.PHONY: unittest systemtest clean realclean
+.PHONY: unittest test clean realclean
 
 unittest:
 	docker build -t unit --target unittest . && docker rmi unit 
