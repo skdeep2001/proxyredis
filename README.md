@@ -1,7 +1,7 @@
 # ProxyRedis
 
 ## Architecture and Code Details
-The caching proxy for redis has this as its high level architecture:
+The caching proxy for redis has the following high level architecture:
 ```
 LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
 ```
@@ -59,7 +59,9 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
 ## Known Issues / Areas for Improvement
 - Fix issue with graceful shutdown of the HTTP server causing container take longer to shutdown.
 - Add pre-commit git hooks for PEP8 linter
-- Improve the unit and system tests. Test with different key and value sizes.
+- More comprehensive unit and system tests. 
+  - Test with different key and value sizes.
+  - Test LRU expiry
 - Improve the code documentation including this README.
 - Add logging.
 - Change redis connection to connection pool for developing the concurrent LRUCache.
