@@ -20,6 +20,8 @@ class RedisKVStore(KVStore):
         if result is None:
             self.misses += 1
         else:
+            # returns bytearray, convert to utf-8
+            result = result.decode()
             self.hits += 1
-        return result.decode()
+        return result
 

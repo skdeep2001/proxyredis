@@ -38,6 +38,7 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
   - A badly formatted query will return status 400
   - A result of getting throttled with have status 503
   - If a key does not exist in the Redis store (or cache), the status will be 404.
+  - The value if it exists will be decoded to a utf-8 string.
 
 ## Build and Test
 - Requirements for build and run
