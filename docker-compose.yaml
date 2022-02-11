@@ -7,14 +7,33 @@ services:
     env_file: env
     ports:
       - "${PROXY_PORT}:${PROXY_PORT}"
-  tester:
-    build:
-      context: .
-      target: systemtest
-    env_file: env
   redis:
     image: "redis"
     hostname: "${REDIS_HOST}"
     command: --port ${REDIS_PORT}
     ports: 
       - ${REDIS_PORT}:${REDIS_PORT}
+  start_dependencies:
+    image: alpine:latest
+    depends_on:
+      - redis
+      - web
+    command: >
+      /bin/sh -c "
+        apk update && apk add netcat-openbsd;
+        while ! nc -z web ${PROXY_PORT};
+        do
+          echo sleeping;
+          sleep 1;
+        done;
+        echo Connected!;
+        ping -c1 web;
+      "
+  tests:
+    build:
+      context: .
+      target: systemtest
+    env_file: env
+    depends_on:
+      - redis
+      - web

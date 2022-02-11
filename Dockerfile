@@ -16,5 +16,5 @@ FROM unittest as development
 ENV PYTHONPATH=/home/app
 CMD ["python", "-u", "proxycache/main.py"]
 
-FROM unittest as systemtest
-CMD ["pytest", "tests/system"]
+FROM development as systemtest
+CMD ["pytest", "-s", "-v", "tests/system"]

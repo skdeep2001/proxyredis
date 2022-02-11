@@ -30,11 +30,11 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
   ```
   /lookup?key=<key>
   ```
-- A succesful lookup is returned as JSON response with the following format:
+- The result of a lookup is returned as JSON response with the following format:
   ```
-   {key:<key>, value: <value>}
+   {key:<key>, value: <value>, status: <200|404|503|400>}
   ```
-- If a key does not exist in the Redis store (or cache), the server will return a 404 error response.
+- If a key does not exist in the Redis store (or cache), the server will return a nil value.
 
 ## Build and Test
 - Requirements for build and run

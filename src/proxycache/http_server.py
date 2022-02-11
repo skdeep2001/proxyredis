@@ -47,25 +47,30 @@ class AsyncHTTPServer:
     # -----------------------------------------------------------
 
     async def _cache_lookup(self, request):
+        status = 200
+        
         try:
             key = request.rel_url.query['key']
-        except:
+        except KeyError:
             # Bad request
-            return web.Response(status=400)
+            status = 400
+            data = dict(key=None, value=None, status=status)
+            return web.json_response(data, status=status)
 
         if self.limiter.is_throttling():
             # Rate limiter kicked in
-            return web.Response(status=503)
+            status = 503
+            data = dict(key=key, value=None, status=status)
+            return web.json_response(data, status=status)
 
         task = self.loop.run_in_executor(self.cache_req_executor,
                 self.cache_getter, key)
         completed, pending = await asyncio.wait([task])
         result = task.result()
-
-        if result is None:
-            return web.Response(status=404)
-        else:
-            return web.Response(text=result)
+        # key may not be present in db or cache
+        status = 404 if result is None else 200
+        data = dict(key=key, value=result, status=status)   
+        return web.json_response(data, status=status)
 
     def _configure(self):
         self.app.add_routes([

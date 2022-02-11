@@ -9,12 +9,13 @@ unittest:
 test:
 	docker-compose ${DOCKER_ENV} down && \
 	docker-compose ${DOCKER_ENV} build && \
-	docker-compose ${DOCKER_ENV} up -d
+	docker-compose ${DOCKER_ENV} run start_dependencies && \
+	docker-compose ${DOCKER_ENV} run tests
 
 all: test	
 
 clean:
-	docker-compose --env-file env down
+	docker-compose ${DOCKER_ENV} down
 	rm -f ./*/*.pyc
 	rm -rf ./*/__pycache__
 
