@@ -5,7 +5,7 @@ The caching proxy for redis has this as its high level architecture:
 ```
 LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
 ```
-- LB: Load Balancer that can spray the incoming requests in a round-robin fashion across multiple TCP ports. In the current implementation the load balancer is actually omitted as explained by the next item but is included for scaling up, if a signle http server becomes the bottleneck.
+- LB: Load Balancer that can spray the incoming requests in a round-robin fashion across multiple TCP ports. In the current implementation the load balancer is actually omitted as explained by the next item but is included for scaling up, if a single http server becomes the bottleneck.
 - HTTPD: HTTP server that runs an async event loop in its dedicated thread. The server accepts incoming connections on a single TCP port. It configures the API routes and handles the GET request to query the key from the cache.
   - For scaling, multiple of these servers can be spun up, each bound to a distinct TCP port and running its own async event loop on a dedicated thread/core. When this is done, the load balancer can be added.
   - In the current implementation, only a single port and HTTP server is configured and spun up. Changes to support multiple servers require a minor tweak to the configuration parameter format in the **env** file and a minor change to the main program to create multiple threads and Http server objects.
