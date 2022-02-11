@@ -9,16 +9,7 @@ import threading
 from proxycache.http_server import AsyncHTTPServer
 from proxycache.lrucache import LRUCache
 from proxycache.rate_limiter import Limiter
-
-# Hack for testing
-class Cache:
-    def __init__(self):
-        pass
-
-    def get(self, key):
-        #print("New thread: GET " + req.path)
-        return 'Hello from different thread {}: lookup {}'.format(
-            threading.get_ident(), key)
+from proxycache.db import RedisKVStore
 
 def setup_signal_handlers(server):
     def signal_handler(signal, frame):
@@ -52,16 +43,13 @@ def main():
     service_cfg = get_service_config()
     redis_cfg = get_redis_config()
     
-    import redis
-    r = redis.Redis(host=redis_cfg[0], port=redis_cfg[1], db=0)
-
-    cache = LRUCache(service_cfg[2], service_cfg[3], r)
+    db = RedisKVStore(host=redis_cfg[0], port=redis_cfg[1])
+    cache = LRUCache(service_cfg[2], service_cfg[3], db)
     cache_executor = ThreadPoolExecutor(max_workers=1)
-
     rate_limiter = Limiter()
-
     httpd = AsyncHTTPServer(service_cfg[0], service_cfg[1],
                             cache.get, cache_executor, rate_limiter)
+
     setup_signal_handlers(httpd)
 
     # start the server event loop on its own thread

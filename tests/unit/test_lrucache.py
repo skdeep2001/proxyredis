@@ -1,6 +1,8 @@
 
 from proxycache.lrucache import LRUCache
 
+# TODO: test expiry
+
 class MockDb:
     def __init__(self):
         self.keys = set()

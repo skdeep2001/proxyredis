@@ -49,7 +49,7 @@ class LRUCache(ExpiringCache):
         return node
 
     def get(self, key):
-        print('LRUCache get key {}'.format(key))
+        # print('LRUCache get key {}'.format(key))
         if key in self.map:
             node = self.map[key]
             
@@ -66,6 +66,7 @@ class LRUCache(ExpiringCache):
                 self.misses += 1
 
                 value = self.db.get(key)
+                # print(f'db1 returned key={key} value={value}')
                 if value is None:
                     return None
 
@@ -76,6 +77,7 @@ class LRUCache(ExpiringCache):
                 return value
         else:
             value = self.db.get(key)
+            # print(f'db2 returned key={key} value={value}')
             if value is None:
                 return None
             self.misses += 1
