@@ -22,12 +22,24 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
 - Redis Store: Uses the redis protocol to query Redis db in a synchronous fashion. The option to use the asynchronous version of the interface was not investigated due to lack of time.
 
 ## Code
-- The code is implemented in Python 3.10. The following libraries are required (installed using pip):
+- The code is implemented using Python 3.10. The following libraries are required (installed using pip):
   - redis-py
   - aiohttp (async http library)
   - pytest (for unit and system tests)
-- **main.py** implements the entry point for the service startup and configuration and construct the processing pipeline shown in the architecture section.
-- The HTTP service supports the following GET query:
+- The configuration settings for the services are passed through environment variables defined in the **<root>/env** file:
+  ```
+  PROXY_HOST=""
+  PROXY_PORT=8000
+  PROXY_MAX_KEYS=1000
+  PROXY_TTL_MS=10000
+
+  REDIS_HOST=redis
+  REDIS_PORT=6379
+  ```
+- **<root>/src/proxycache/** has all modules that implement the caching proxy.
+  - **<root>/src/proxycache/main.py** implements the entry point for the service startup and configuration and constructs the processing pipeline shown in the architecture section.
+
+- The HTTP service (**<root>/src/proxycache/http_server.py**) supports the following GET query:
   ```
   /lookup?key=<key>
   ```
@@ -40,7 +52,9 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
   - A result of getting throttled with have status 503
   - If a key does not exist in the Redis store (or cache), the status will be 404.
   - The value if it exists will be decoded to a utf-8 string.
-- A single connection to the db is kept open for the life of the process.
+- The stub API throttle is defined in **<root>/src/proxycache/rate_limiter.py**
+- A single connection to the db (**<root>/src/proxycache/db.py**) is kept open for the life of the process.
+- Unit and system tests can be found in **<root>/tests/unit** and **<root>/tests/system**. 
 
 ## Build and Test
 - Requirements for build and run
@@ -70,7 +84,7 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
 - Improve the code documentation including this README.
 - Add logging.
 - Add error injection mechanisms.
-- Add some more decoupling through factory constructors so cache implementations can be configured at service startup. This will help with testing.
+- Add some more decoupling through factory constructors so cache implementations can be configured at service startup. This will help with testing and analyzing performance, alternatively could use monkey patching.
 - Change redis connection to connection pool for developing the concurrent LRUCache.
 - Harden against exceptions such as the redis service failure and error out gracefully.
 - Dump http server/lrucache/db metrics to a stats database (that can be aggregated across multiple cache partitions/shards) and displayed in something like a Grafana dashboard.
@@ -116,3 +130,17 @@ L2 cache:                        1 MiB
 L3 cache:                        24 MiB
 
 ```
+End-to-end benchmark with wrk where the key does not exist in the db or cache:
+```
+$ wrk -t2 -c2 -d10 http://localhost:8000/lookup?key=0
+Running 10s test @ http://localhost:8000/lookup?key=0
+  2 threads and 2 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.14ms  327.20us  10.71ms   94.64%
+    Req/Sec     0.89k    74.67     0.98k    90.00%
+  17704 requests in 10.01s, 3.36MB read
+Requests/sec:   1768.44
+Transfer/sec:    343.67KB
+```
+The same test with just the HTTP frontend and a dummy cache shows ~3.5-4K requests/sec.
+Need to do more performance bottleneck analysis.
