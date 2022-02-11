@@ -1,7 +1,6 @@
+import time
 
 from proxycache.lrucache import LRUCache
-
-# TODO: test expiry
 
 class MockDb:
     def __init__(self):
@@ -65,5 +64,34 @@ def test_lru_large():
     assert lru.hits == len(query_keys)
     assert lru.misses == len(query_keys)    
     assert db.hits == len(query_keys)
+    db_keys = list(db.keys)
+    assert db_keys == query_keys
+
+def test_lru_expiry():
+    db = MockDb()
+    # keys expire in 100ms
+    lru = LRUCache(10, 100, db)
+    query_keys = [i for i in range(10)]
+    for i in query_keys:
+        value = lru.get(i)
+        assert value == i
+    
+    assert lru.hits == 0
+    assert lru.misses == len(query_keys)    
+    assert db.hits == len(query_keys)
+    db_keys = list(db.keys)
+    assert db_keys == query_keys
+
+    # allow keys to expire
+    time.sleep(0.2)
+
+    for i in query_keys:
+        value = lru.get(i)
+        assert value == i
+    
+    # should see no hits
+    assert lru.hits == 0
+    assert lru.misses == len(query_keys) * 2
+    assert db.hits == len(query_keys) * 2
     db_keys = list(db.keys)
     assert db_keys == query_keys

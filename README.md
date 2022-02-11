@@ -77,7 +77,6 @@ LB(*) -> HTTPD [ -> Throttle] -> Req Processor (LRU Cache -> Redis store)
 - Add pre-commit git hooks for PEP8 linter
 - More comprehensive unit and system tests. For example:
   - Test with different key and value sizes.
-  - Test LRU expiry
   - Test all error responses
   - High load test
 - Improve the code documentation including this README.
