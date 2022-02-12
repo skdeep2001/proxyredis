@@ -6,7 +6,7 @@ DOCKER_ENV=--env-file env
 all: test
 
 unittest:
-	docker build -t unit --target unittest . && docker rmi unit 
+	docker build -t unit --target unittest . && docker rmi unit
 
 test:
 	docker-compose ${DOCKER_ENV} down && \
