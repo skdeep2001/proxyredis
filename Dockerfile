@@ -3,6 +3,7 @@ FROM python:latest as base
 WORKDIR /home/app
 RUN pip install redis
 RUN pip install aiohttp
+RUN pip install uvloop
 RUN mkdir -p /home/app/proxycache
 COPY src/proxycache /home/app/proxycache
 

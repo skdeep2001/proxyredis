@@ -1,4 +1,5 @@
 import asyncio
+import uvloop
 from aiohttp import web
 
 # Enable for debug logs
@@ -21,7 +22,7 @@ class AsyncHTTPServer:
         self.cache_getter = cache_getter
         self.cache_req_executor = cache_req_executor
         self.limiter = limiter
-        self.loop = asyncio.new_event_loop()
+        self.loop = uvloop.new_event_loop()
         self.app = web.Application()
         self.runner = self._configure()
 
